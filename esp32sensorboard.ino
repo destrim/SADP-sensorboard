@@ -108,9 +108,6 @@ void scan_wifi_networks() {
     delay(1000);
     for (int i = 0; i < n; ++i) {
       ssids[i + 1] = WiFi.SSID(i);
-//      Serial.print(i + 1);
-//      Serial.print(": ");
-//      Serial.println(ssids[i + 1]);
       SerialBT.println(String(i + 1) + ": " + WiFi.SSID(i) + " (Strength:" + WiFi.RSSI(i) + ")");
       Serial.println(String(i + 1) + ": " + WiFi.SSID(i) + " (Strength:" + WiFi.RSSI(i) + ")");
     }
