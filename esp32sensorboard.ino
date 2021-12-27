@@ -17,7 +17,7 @@ String clientPass;
 const char* ntpServer = "pool.ntp.org";
 const char* serverName = "https://jsonplaceholder.typicode.com/posts";
 
-const char* deviceName = "sensorboard_01";
+String deviceName = "default";
 
 struct tm timeinfo;
 const long  gmtOffset = 3600;
@@ -31,6 +31,8 @@ unsigned long timerDelay = 4500;
 typedef enum { 
   NONE,
   BT_CONNECTED,
+  WAIT_FOR_DEVICE_NAME,
+  GOT_DEVICE_NAME,
   NETWORK_SCANNED,
   WAIT_FOR_SSID,
   GOT_SSID,
@@ -55,6 +57,7 @@ void setup() {
   Serial.println("Booting...");
 
   preferences.begin("wifi_access", false);
+  preferences.clear();
 
   if (!init_wifi()) {
     SerialBT.register_callback(callback);
@@ -121,6 +124,12 @@ void callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
     connectionState = BT_CONNECTED;
   }
 
+  if (event == ESP_SPP_DATA_IND_EVT && connectionState == WAIT_FOR_DEVICE_NAME) {
+    deviceName = SerialBT.readString();
+    deviceName.trim();
+    connectionState = GOT_DEVICE_NAME;
+  }
+  
   if (event == ESP_SPP_DATA_IND_EVT && connectionState == WAIT_FOR_SSID) {
     int i = SerialBT.readString().toInt();
     clientSsid = ssids[i];
@@ -157,6 +166,12 @@ void establish_connection() {
     switch (connectionState)
     {
       case BT_CONNECTED:
+        SerialBT.println("Please enter device name");
+        Serial.println("Please enter device name");
+        connectionState = WAIT_FOR_DEVICE_NAME;
+        break;
+
+      case GOT_DEVICE_NAME:
         SerialBT.println("Scanning Wi-Fi networks");
         Serial.println("Scanning Wi-Fi networks");
         scan_wifi_networks();
@@ -222,7 +237,7 @@ void loop() {
         String date = String(date_array);
         
         String request = "{\"name\":\""
-                         + String(deviceName)
+                         + deviceName
                          + "\",\"timestamp\":\""
                          + date
                          + "\",\"temp\":\""
