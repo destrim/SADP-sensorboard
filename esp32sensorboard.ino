@@ -17,7 +17,7 @@ String clientPass;
 const char* ntpServer = "pool.ntp.org";
 const char* serverName = "https://jsonplaceholder.typicode.com/posts";
 
-String deviceName = "default";
+String deviceName;
 
 struct tm timeinfo;
 const long  gmtOffset = 3600;
@@ -57,7 +57,11 @@ void setup() {
   Serial.println("Booting...");
 
   preferences.begin("wifi_access", false);
-  preferences.clear();
+
+  deviceName = preferences.getString("deviceName");
+  if (deviceName.equals("")) {
+    deviceName = "default";
+  }
 
   if (!init_wifi()) {
     SerialBT.register_callback(callback);
@@ -75,6 +79,7 @@ bool init_wifi() {
   ssid = tmpSsid.c_str();
   pass = tmpPass.c_str();
 
+  Serial.println(deviceName);
   Serial.println(ssid);
   Serial.println(pass);
 
@@ -169,6 +174,7 @@ void establish_connection() {
         break;
 
       case GOT_DEVICE_NAME:
+        preferences.putString("deviceName", deviceName);
         SerialBT.println("Scanning Wi-Fi networks");
         Serial.println("Scanning Wi-Fi networks");
         scan_wifi_networks();
