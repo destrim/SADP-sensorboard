@@ -107,7 +107,7 @@ void scan_wifi_networks() {
   WiFi.mode(WIFI_STA);
   int n =  WiFi.scanNetworks();
   if (n == 0) {
-    SerialBT.println("no networks found");
+    SerialBT.println("No networks found");
   } else {
     SerialBT.println(String(n) + " networks found");
     delay(1000);
@@ -147,13 +147,13 @@ void callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
 
 void disconnect_bluetooth() {
   delay(1000);
-  Serial.println("BT stopping");
+  Serial.println("Bluetooth disconnecting...");
   SerialBT.println("Bluetooth disconnecting...");
   delay(1000);
   SerialBT.flush();
   SerialBT.disconnect();
   SerialBT.end();
-  Serial.println("BT stopped");
+  Serial.println("Bluetooth disconnected");
   delay(1000);
   btDisconnect = false;
 }
@@ -168,34 +168,34 @@ void establish_connection() {
     switch (connectionState)
     {
       case BT_CONNECTED:
-        SerialBT.println("Please enter device name");
-        Serial.println("Please enter device name");
+        SerialBT.println("Enter device name");
+        Serial.println("Enter device name");
         connectionState = WAIT_FOR_DEVICE_NAME;
         break;
 
       case GOT_DEVICE_NAME:
         preferences.putString("deviceName", deviceName);
-        SerialBT.println("Scanning Wi-Fi networks");
-        Serial.println("Scanning Wi-Fi networks");
+        SerialBT.println("Searching for networks");
+        Serial.println("Searching for networks");
         scan_wifi_networks();
         connectionState = NETWORK_SCANNED;
         break;
 
       case NETWORK_SCANNED:
-        SerialBT.println("Please enter the number for your Wi-Fi");
-        Serial.println("Please enter the number for your Wi-Fi");
+        SerialBT.println("Enter your Wi-Fi number");
+        Serial.println("Enter your Wi-Fi number");
         connectionState = WAIT_FOR_SSID;
         break;
   
       case GOT_SSID:
-        SerialBT.println("Please enter your Wi-Fi password");
-        Serial.println("Please enter your Wi-Fi password");
+        SerialBT.println("Enter your Wi-Fi password");
+        Serial.println("Enter your Wi-Fi password");
         connectionState = WAIT_FOR_PASS;
         break;
   
       case GOT_PASS:
-        SerialBT.println("Please wait for Wi-Fi connection...");
-        Serial.println("Please wait for Wi_Fi connection...");
+        SerialBT.println("Wait for connection...");
+        Serial.println("Wait for connection...");
         connectionState = WAIT_CONNECT;
         preferences.putString("ssid", clientSsid);
         preferences.putString("pass", clientPass);
