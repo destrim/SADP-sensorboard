@@ -7,6 +7,9 @@
 #define DHTPIN 27
 #define DHTTYPE DHT11
 
+#define uS_TO_S_FACTOR 1000000
+#define TIME_TO_SLEEP  10
+
 String ssids[20];
 
 const char* ssid = "";
@@ -15,7 +18,7 @@ String clientSsid;
 String clientPass;
 
 const char* ntpServer = "pool.ntp.org";
-const char* serverName = "https://jsonplaceholder.typicode.com/posts";
+const char* serverName = "http://sadp-server.herokuapp.com/sensor/data";
 
 String deviceName;
 
@@ -54,9 +57,14 @@ DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println("Booting...");
 
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
   preferences.begin("wifi_access", false);
+
+  dht.begin();
 
   deviceName = preferences.getString("deviceName");
   if (deviceName.equals("")) {
@@ -70,7 +78,53 @@ void setup() {
   }
 
   configTime(gmtOffset, daylightOffset, ntpServer);
-  dht.begin();
+
+  if(WiFi.status()== WL_CONNECTED){
+    WiFiClient client;
+    HTTPClient http;
+
+    float t = dht.readTemperature();
+    float h = dht.readHumidity();
+
+    while (isnan(h) || isnan(t)) {
+      Serial.println("Failed to read from DHT sensor!");
+      t = dht.readTemperature();
+      h = dht.readHumidity();
+    }
+
+    getLocalTime(&timeinfo);
+
+    http.begin(client, serverName);
+    http.addHeader("Content-Type", "application/json");
+    
+    char date_array[20];
+    strftime(date_array, 20, "%Y-%m-%d %H:%M:%S", &timeinfo);
+    String date = String(date_array);
+    
+    String request = "{\"name\":\""
+                     + deviceName
+                     + "\",\"timestamp\":\""
+                     + date
+                     + "\",\"temp\":\""
+                     + String(t)
+                     + "\",\"hum\":\""
+                     + String(h)
+                     + "\"}";
+    
+    Serial.println(request);
+    int httpResponseCode = http.POST(request);
+   
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    
+    http.end();
+  }
+  else {
+    Serial.println("WiFi Disconnected");
+  }
+
+  Serial.flush(); 
+  esp_deep_sleep_start();
 }
 
 bool init_wifi() {
@@ -218,49 +272,4 @@ void establish_connection() {
 }
 
 void loop() {
-  if ((millis() - lastTime) > timerDelay) {
-    if(WiFi.status()== WL_CONNECTED){
-      WiFiClient client;
-      HTTPClient http;
-
-      float t = dht.readTemperature();
-      float h = dht.readHumidity();
-      
-      if (isnan(h) || isnan(t)) {
-        Serial.println("Failed to read from DHT sensor!");
-        return;
-      } else {
-        http.begin(client, serverName);
-        http.addHeader("Content-Type", "application/json");
-
-        getLocalTime(&timeinfo);
-        
-        char date_array[20];
-        strftime(date_array, 20, "%Y-%m-%d %H:%M:%S", &timeinfo);
-        String date = String(date_array);
-        
-        String request = "{\"name\":\""
-                         + deviceName
-                         + "\",\"timestamp\":\""
-                         + date
-                         + "\",\"temp\":\""
-                         + String(t)
-                         + "\",\"hum\":\""
-                         + String(h)
-                         + "\"}";
-        
-        Serial.println(request);
-        int httpResponseCode = http.POST(request);
-       
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpResponseCode);
-        
-        http.end();
-      }
-    }
-    else {
-      Serial.println("WiFi Disconnected");
-    }
-    lastTime = millis();
-  }
 }
