@@ -8,7 +8,7 @@
 #define DHTTYPE DHT11
 
 #define uS_TO_S_FACTOR 1000000
-#define TIME_TO_SLEEP  10
+#define TIME_TO_SLEEP  55
 
 String ssids[20];
 
@@ -26,7 +26,7 @@ struct tm timeinfo;
 const long  gmtOffset = 3600;
 const int   daylightOffset = 3600;
 
-const long wifiTimeout = 10000;
+const long wifiTimeout = 15000;
 
 unsigned long lastTime = 0;
 unsigned long timerDelay = 4500;
