@@ -41,7 +41,6 @@ typedef enum {
   GOT_SSID,
   WAIT_FOR_PASS,
   GOT_PASS,
-  WAIT_CONNECT,
   CONNECTED,
   FAILED
 } ConnectionStates;
@@ -52,7 +51,7 @@ bool connEstablished = false;
 bool btDisconnect = false;
 
 BluetoothSerial SerialBT;
-Preferences preferences;
+Preferences pref;
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
@@ -62,11 +61,11 @@ void setup() {
 
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
-  preferences.begin("wifi_access", false);
+  pref.begin("wifi_access", false);
 
   dht.begin();
 
-  deviceName = preferences.getString("deviceName");
+  deviceName = pref.getString("deviceName");
   if (deviceName.equals("")) {
     deviceName = "default";
   }
@@ -128,8 +127,8 @@ void setup() {
 }
 
 bool init_wifi() {
-  String tmpSsid = preferences.getString("ssid");
-  String tmpPass = preferences.getString("pass");
+  String tmpSsid = pref.getString("ssid");
+  String tmpPass = pref.getString("pass");
   ssid = tmpSsid.c_str();
   pass = tmpPass.c_str();
 
@@ -167,8 +166,8 @@ void scan_wifi_networks() {
     delay(1000);
     for (int i = 0; i < n; ++i) {
       ssids[i + 1] = WiFi.SSID(i);
-      SerialBT.println(String(i + 1) + ": " + WiFi.SSID(i) + " (Strength:" + WiFi.RSSI(i) + ")");
-      Serial.println(String(i + 1) + ": " + WiFi.SSID(i) + " (Strength:" + WiFi.RSSI(i) + ")");
+      SerialBT.println(String(i + 1) + ": " + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + ")");
+      Serial.println(String(i + 1) + ": " + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + ")");
     }
     connectionState = NETWORK_SCANNED;
   }
@@ -228,7 +227,7 @@ void establish_connection() {
         break;
 
       case GOT_DEVICE_NAME:
-        preferences.putString("deviceName", deviceName);
+        pref.putString("deviceName", deviceName);
         SerialBT.println("Searching for networks");
         Serial.println("Searching for networks");
         scan_wifi_networks();
@@ -250,9 +249,8 @@ void establish_connection() {
       case GOT_PASS:
         SerialBT.println("Wait for connection...");
         Serial.println("Wait for connection...");
-        connectionState = WAIT_CONNECT;
-        preferences.putString("ssid", clientSsid);
-        preferences.putString("pass", clientPass);
+        pref.putString("ssid", clientSsid);
+        pref.putString("pass", clientPass);
         if (init_wifi()) {
           btDisconnect = true;
           connectionState = CONNECTED;
