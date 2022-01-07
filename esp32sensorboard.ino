@@ -77,50 +77,7 @@ void setup() {
   }
 
   configTime(gmtOffset, daylightOffset, ntpServer);
-
-  if(WiFi.status()== WL_CONNECTED){
-    WiFiClient client;
-    HTTPClient http;
-
-    float t = dht.readTemperature();
-    float h = dht.readHumidity();
-
-    while (isnan(h) || isnan(t)) {
-      Serial.println("Failed to read from DHT sensor!");
-      t = dht.readTemperature();
-      h = dht.readHumidity();
-    }
-
-    getLocalTime(&timeinfo);
-
-    http.begin(client, serverName);
-    http.addHeader("Content-Type", "application/json");
-    
-    char date_array[20];
-    strftime(date_array, 20, "%Y-%m-%d %H:%M:%S", &timeinfo);
-    String date = String(date_array);
-    
-    String request = "{\"name\":\""
-                     + deviceName
-                     + "\",\"timestamp\":\""
-                     + date
-                     + "\",\"temp\":\""
-                     + String(t)
-                     + "\",\"hum\":\""
-                     + String(h)
-                     + "\"}";
-    
-    Serial.println(request);
-    int httpResponseCode = http.POST(request);
-   
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    
-    http.end();
-  }
-  else {
-    Serial.println("WiFi Disconnected");
-  }
+  send_http_post();
 
   Serial.flush(); 
   esp_deep_sleep_start();
@@ -266,6 +223,52 @@ void establish_connection() {
         connectionState = BT_CONNECTED;
         break;
     }
+  }
+}
+
+void send_http_post() {
+  if(WiFi.status()== WL_CONNECTED){
+    WiFiClient client;
+    HTTPClient http;
+
+    float t = dht.readTemperature();
+    float h = dht.readHumidity();
+
+    while (isnan(h) || isnan(t)) {
+      Serial.println("Failed to read from DHT sensor!");
+      t = dht.readTemperature();
+      h = dht.readHumidity();
+    }
+
+    getLocalTime(&timeinfo);
+
+    http.begin(client, serverName);
+    http.addHeader("Content-Type", "application/json");
+    
+    char date_array[20];
+    strftime(date_array, 20, "%Y-%m-%d %H:%M:%S", &timeinfo);
+    String date = String(date_array);
+    
+    String request = "{\"name\":\""
+                     + deviceName
+                     + "\",\"timestamp\":\""
+                     + date
+                     + "\",\"temp\":\""
+                     + String(t)
+                     + "\",\"hum\":\""
+                     + String(h)
+                     + "\"}";
+    
+    Serial.println(request);
+    int httpResponseCode = http.POST(request);
+   
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    
+    http.end();
+  }
+  else {
+    Serial.println("WiFi Disconnected");
   }
 }
 
